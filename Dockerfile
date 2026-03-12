@@ -1,27 +1,19 @@
-# ===== ETAPA 1: Compilar el proyecto =====
-FROM maven:3.9.6-eclipse-temurin-17 AS build
-
+# ETAPA 1: Compilación (Build)
+# Usamos Maven para construir el archivo .jar desde cero en el servidor
+FROM maven:3.8.5-openjdk-17 AS build
 WORKDIR /app
-
-# Copiar archivos de configuración de Maven primero
-# (esto aprovecha el caché de Docker si el pom.xml no cambió)
-COPY pom.xml .
-RUN mvn dependency:go-offline -B
-
-# Copiar el código fuente y compilar
-COPY src ./src
+# Copiamos todo tu código al contenedor
+COPY . .
+# Ejecutamos el comando de compilación de Maven
 RUN mvn clean package -DskipTests
 
-# ===== ETAPA 2: Ejecutar el proyecto =====
-FROM eclipse-temurin:17-jre-alpine
-
+# ETAPA 2: Ejecución (Run)
+# Usamos una imagen ligera de Java para correr la app
+FROM eclipse-temurin:17-jdk-alpine
 WORKDIR /app
-
-# Copiar solo el JAR generado en la etapa anterior
-COPY --from=build /app/target/EXAMEN1-0.0.1-SNAPSHOT.jar app.jar
-
-# Puerto que expone el contenedor
+# Traemos el archivo .jar generado en la etapa anterior
+COPY --from=build /app/target/*.jar app.jar
+# Exponemos el puerto estándar
 EXPOSE 8080
-
-# Comando para arrancar la app
+# Arrancamos la aplicación
 ENTRYPOINT ["java", "-jar", "app.jar"]
